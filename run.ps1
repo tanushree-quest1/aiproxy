@@ -3,7 +3,7 @@ if (-not $scriptDir) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 }
 
-$logPath = Join-Path $scriptDir "logs\raw_traffic.jsonl"
+$logPath = Join-Path $scriptDir "logs\raw_traffic.json"
 
 Get-Content (Join-Path $scriptDir ".env") | ForEach-Object {
     if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
@@ -50,7 +50,7 @@ Write-Host "Starting Opencode..." -ForegroundColor Yellow
 Write-Host ""
 
 opencode `
-    -m openai/gemini-2.5-flash
+    -m gemini-proxy/gemini-2.5-flash
 
 Write-Host ""
 Write-Host "Stopping custom proxy..." -ForegroundColor Cyan

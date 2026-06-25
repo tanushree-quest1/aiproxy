@@ -10,13 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TARGET = os.getenv("PROXY_TARGET", "https://generativelanguage.googleapis.com")
-LOG = Path(__file__).parent / "logs" / "raw_traffic.jsonl"
+LOG = Path(__file__).parent / "logs" / "raw_traffic.json"
 LOG.parent.mkdir(exist_ok=True)
 
 PRICING = {
-    "gpt-4": {"prompt": 30.0, "completion": 60.0},
-    "gpt-4-turbo": {"prompt": 10.0, "completion": 30.0},
-    "gpt-3.5-turbo": {"prompt": 0.5, "completion": 1.5},
     "gemini-2.5-flash": {"prompt": 0.075, "completion": 0.3},
 }
 
@@ -34,11 +31,26 @@ async def stop():
 
 def extract_token_counts(response_data: Any) -> Dict[str, int]:
     tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    
     if isinstance(response_data, dict) and "usage" in response_data:
         usage = response_data["usage"]
         tokens["prompt_tokens"] = usage.get("prompt_tokens", 0)
         tokens["completion_tokens"] = usage.get("completion_tokens", 0)
         tokens["total_tokens"] = usage.get("total_tokens", 0)
+    elif isinstance(response_data, str) and "data:" in response_data:
+        for line in reversed(response_data.split("\n")):
+            line = line.strip()
+            if line.startswith("data:") and "[DONE]" not in line:
+                try:
+                    chunk = json.loads(line[5:].strip())
+                    if "usage" in chunk and chunk["usage"]:
+                        usage = chunk["usage"]
+                        tokens["prompt_tokens"] = usage.get("prompt_tokens", 0)
+                        tokens["completion_tokens"] = usage.get("completion_tokens", 0)
+                        tokens["total_tokens"] = usage.get("total_tokens", 0)
+                        break
+                except: pass
+    
     return tokens
 
 def classify_error(status_code: int) -> Dict[str, Any]:
@@ -83,26 +95,6 @@ def calculate_cost(tokens: Dict[str, int], model: str) -> Dict[str, float]:
     
     return cost_info
 
-def extract_user_id(headers: Dict[str, str]) -> Optional[str]:
-    user_id_headers = [
-        "x-user-id", "user-id", "user_id", 
-        "x-user", "user", "authorization",
-        "x-api-key", "api-key"
-    ]
-    
-    for header in user_id_headers:
-        if header in headers:
-            user_id = headers[header]
-            # Clean up authorization headers
-            if header in ["authorization", "x-api-key", "api-key"]:
-                if user_id.startswith("Bearer "):
-                    user_id = user_id[7:].split(".")[0][:8]  # First 8 chars of JWT
-                else:
-                    user_id = user_id[:8]
-            return user_id
-    
-    return None
-
 @app.api_route("/{path:path}", methods=["GET","POST","PUT","DELETE","PATCH"])
 async def proxy(request: Request, path: str):
     body = await request.body()
@@ -117,14 +109,11 @@ async def proxy(request: Request, path: str):
     token_counts = extract_token_counts(resp_json)
     error_info = classify_error(resp.status_code)
     model = req_json.get("model", "unknown") if isinstance(req_json, dict) else "unknown"
-    cost_info = calculate_cost(token_counts, model)
-    user_id = extract_user_id(dict(request.headers))
-    
+    cost_info = calculate_cost(token_counts, model)    
     log_entry = {
         "meta": {
             "ts": datetime.now(timezone.utc).isoformat(),
             "id": str(uuid.uuid4())[:8],
-            "user_id": user_id,
         },
         "request": {
             "method": request.method,
@@ -144,9 +133,22 @@ async def proxy(request: Request, path: str):
             "cost": cost_info,
         },
     }
-    
-    with open(LOG, "a", encoding="utf-8") as f:
-        f.write(json.dumps(log_entry, default=str) + "\n")
+    formatted = json.dumps(log_entry, indent=2, default=str)
+    sections = formatted.split('",\n  "')
+    spaced = '",\n\n  "'.join(sections)
+    if LOG.exists() and LOG.stat().st_size > 0:
+        with open(LOG, "r", encoding="utf-8") as f:
+            existing = json.load(f)
+    else:
+        existing = []
+    existing.append(log_entry)
+
+    with open(LOG, "w", encoding="utf-8") as f:
+        output = json.dumps(existing, indent=2, default=str)
+        sections = output.split('",\n    "')
+        spaced = '",\n\n    "'.join(sections)
+        spaced = spaced.replace("    },\n    {", "    },\n\n    {")
+        f.write(spaced)
     
     return Response(content=resp.content, status_code=resp.status_code,
         headers={k:v for k,v in resp.headers.items() if k.lower() not in ("transfer-encoding","content-encoding","content-length")})

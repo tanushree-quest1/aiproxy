@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "gemini-proxy": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Gemini via Proxy",
+      "options": {
+        "baseURL": "http://localhost:8000/v1beta/openai"
+      },
+      "models": {
+        "gemini-2.5-flash": {
+          "name": "Gemini 2.5 Flash"
+        }
+      }
+    }
+  }
+}

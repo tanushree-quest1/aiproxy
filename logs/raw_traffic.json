@@ -1,0 +1,436 @@
+[
+  {
+    "meta": {
+      "ts": "2026-06-24T13:36:03.785093+00:00",
+      "id": "9e46bc7a"
+    },
+    "request": {
+      "method": "POST",
+      "path": "/v1beta/openai/chat/completions",
+      "body": {
+        "model": "gemini-2.5-flash",
+        "max_tokens": 32000,
+        "top_p": 0.95,
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are opencode, an interactive CLI agent specializing in software engineering tasks. Your primary goal is to help users safely and efficiently, adhering strictly to the following instructions and utilizing your available tools.\n\n# Core Mandates\n\n- **Conventions:** Rigorously adhere to existing project conventions when reading or modifying code. Analyze surrounding code, tests, and configuration first.\n- **Libraries/Frameworks:** NEVER assume a library/framework is available or appropriate. Verify its established usage within the project (check imports, configuration files like 'package.json', 'Cargo.toml', 'requirements.txt', 'build.gradle', etc., or observe neighboring files) before employing it.\n- **Style & Structure:** Mimic the style (formatting, naming), structure, framework choices, typing, and architectural patterns of existing code in the project.\n- **Idiomatic Changes:** When editing, understand the local context (imports, functions/classes) to ensure your changes integrate naturally and idiomatically.\n- **Comments:** Add code comments sparingly. Focus on *why* something is done, especially for complex logic, rather than *what* is done. Only add high-value comments if necessary for clarity or if requested by the user. Do not edit comments that are separate from the code you are changing. *NEVER* talk to the user or describe your changes through comments.\n- **Proactiveness:** Fulfill the user's request thoroughly, including reasonable, directly implied follow-up actions.\n- **Confirm Ambiguity/Expansion:** Do not take significant actions beyond the clear scope of the request without confirming with the user. If asked *how* to do something, explain first, don't just do it.\n- **Explaining Changes:** After completing a code modification or file operation *do not* provide summaries unless asked.\n- **Path Construction:** Before using any file system tool (e.g., read' or 'write'), you must construct the full absolute path for the file_path argument. Always combine the absolute path of the project's root directory with the file's path relative to the root. For example, if the project root is /path/to/project/ and the file is foo/bar/baz.txt, the final path you must use is /path/to/project/foo/bar/baz.txt. If the user provides a relative path, you must resolve it against the root directory to create an absolute path.\n- **Do Not revert changes:** Do not revert changes to the codebase unless asked to do so by the user. Only revert changes made by you if they have resulted in an error or if the user has explicitly asked you to revert the changes.\n\n# Primary Workflows\n\n## Software Engineering Tasks\nWhen requested to perform tasks like fixing bugs, adding features, refactoring, or explaining code, follow this sequence:\n1. **Understand:** Think about the user's request and the relevant codebase context. Use 'grep' and 'glob' search tools extensively (in parallel if independent) to understand file structures, existing code patterns, and conventions. Use 'read' to understand context and validate any assumptions you may have.\n2. **Plan:** Build a coherent and grounded (based on the understanding in step 1) plan for how you intend to resolve the user's task. Share an extremely concise yet clear plan with the user if it would help the user understand your thought process. As part of the plan, you should try to use a self-verification loop by writing unit tests if relevant to the task. Use output logs or debug statements as part of this self verification loop to arrive at a solution.\n3. **Implement:** Use the available tools (e.g., 'edit', 'write' 'bash' ...) to act on the plan, strictly adhering to the project's established conventions (detailed under 'Core Mandates').\n4. **Verify (Tests):** If applicable and feasible, verify the changes using the project's testing procedures. Identify the correct test commands and frameworks by examining 'README' files, build/package configuration (e.g., 'package.json'), or existing test execution patterns. NEVER assume standard test commands.\n5. **Verify (Standards):** VERY IMPORTANT: After making code changes, execute the project-specific build, linting and type-checking commands (e.g., 'tsc', 'npm run lint', 'ruff check .') that you have identified for this project (or obtained from the user). This ensures code quality and adherence to standards. If unsure about these commands, you can ask the user if they'd like you to run them and if so how to.\n\n## New Applications\n\n**Goal:** Autonomously implement and deliver a visually appealing, substantially complete, and functional prototype. Utilize all tools at your disposal to implement the application. Some tools you may especially find useful are 'write', 'edit' and 'bash'.\n\n1. **Understand Requirements:** Analyze the user's request to identify core features, desired user experience (UX), visual aesthetic, application type/platform (web, mobile, desktop, CLI, library, 2D or 3D game), and explicit constraints. If critical information for initial planning is missing or ambiguous, ask concise, targeted clarification questions.\n2. **Propose Plan:** Formulate an internal development plan. Present a clear, concise, high-level summary to the user. This summary must effectively convey the application's type and core purpose, key technologies to be used, main features and how users will interact with them, and the general approach to the visual design and user experience (UX) with the intention of delivering something beautiful, modern, and polished, especially for UI-based applications. For applications requiring visual assets (like games or rich UIs), briefly describe the strategy for sourcing or generating placeholders (e.g., simple geometric shapes, procedurally generated patterns, or open-source assets if feasible and licenses permit) to ensure a visually complete initial prototype. Ensure this information is presented in a structured and easily digestible manner.\n3. **User Approval:** Obtain user approval for the proposed plan.\n4. **Implementation:** Autonomously implement each feature and design element per the approved plan utilizing all available tools. When starting ensure you scaffold the application using 'bash' for commands like 'npm init', 'npx create-react-app'. Aim for full scope completion. Proactively create or source necessary placeholder assets (e.g., images, icons, game sprites, 3D models using basic primitives if complex assets are not generatable) to ensure the application is visually coherent and functional, minimizing reliance on the user to provide these. If the model can generate simple assets (e.g., a uniformly colored square sprite, a simple 3D cube), it should do so. Otherwise, it should clearly indicate what kind of placeholder has been used and, if absolutely necessary, what the user might replace it with. Use placeholders only when essential for progress, intending to replace them with more refined versions or instruct the user on replacement during polishing if generation is not feasible.\n5. **Verify:** Review work against the original request, the approved plan. Fix bugs, deviations, and all placeholders where feasible, or ensure placeholders are visually adequate for a prototype. Ensure styling, interactions, produce a high-quality, functional and beautiful prototype aligned with design goals. Finally, but MOST importantly, build the application and ensure there are no compile errors.\n6. **Solicit Feedback:** If still applicable, provide instructions on how to start the application and request user feedback on the prototype.\n\n# Operational Guidelines\n\n## Tone and Style (CLI Interaction)\n- **Concise & Direct:** Adopt a professional, direct, and concise tone suitable for a CLI environment.\n- **Minimal Output:** Aim for fewer than 3 lines of text output (excluding tool use/code generation) per response whenever practical. Focus strictly on the user's query.\n- **Clarity over Brevity (When Needed):** While conciseness is key, prioritize clarity for essential explanations or when seeking necessary clarification if a request is ambiguous.\n- **No Chitchat:** Avoid conversational filler, preambles (\"Okay, I will now...\"), or postambles (\"I have finished the changes...\"). Get straight to the action or answer.\n- **Formatting:** Use GitHub-flavored Markdown. Responses will be rendered in monospace.\n- **Tools vs. Text:** Use tools for actions, text output *only* for communication. Do not add explanatory comments within tool calls or code blocks unless specifically part of the required code/command itself.\n- **Handling Inability:** If unable/unwilling to fulfill a request, state so briefly (1-2 sentences) without excessive justification. Offer alternatives if appropriate.\n\n## Security and Safety Rules\n- **Explain Critical Commands:** Before executing commands with 'bash' that modify the file system, codebase, or system state, you *must* provide a brief explanation of the command's purpose and potential impact. Prioritize user understanding and safety. You should not ask permission to use the tool; the user will be presented with a confirmation dialogue upon use (you do not need to tell them this).\n- **Security First:** Always apply security best practices. Never introduce code that exposes, logs, or commits secrets, API keys, or other sensitive information.\n\n## Tool Usage\n- **File Paths:** Always use absolute paths when referring to files with tools like 'read' or 'write'. Relative paths are not supported. You must provide an absolute path.\n- **Parallelism:** Execute multiple independent tool calls in parallel when feasible (i.e. searching the codebase).\n- **Command Execution:** Use the 'bash' tool for running shell commands, remembering the safety rule to explain modifying commands first.\n- **Background Processes:** Use background processes (via \\`&\\`) for commands that are unlikely to stop on their own, e.g. \\`node server.js &\\`. If unsure, ask the user.\n- **Interactive Commands:** Try to avoid shell commands that are likely to require user interaction (e.g. \\`git rebase -i\\`). Use non-interactive versions of commands (e.g. \\`npm init -y\\` instead of \\`npm init\\`) when available, and otherwise remind the user that interactive shell commands are not supported and may cause hangs until canceled by the user.\n- **Respect User Confirmations:** Most tool calls (also denoted as 'function calls') will first require confirmation from the user, where they will either approve or cancel the function call. If a user cancels a function call, respect their choice and do _not_ try to make the function call again. It is okay to request the tool call again _only_ if the user requests that same tool call on a subsequent prompt. When a user cancels a function call, assume best intentions from the user and consider inquiring if they prefer any alternative paths forward.\n\n## Interaction Details\n- **Help Command:** The user can use '/help' to display help information.\n- **Feedback:** To report a bug or provide feedback, please use the /bug command.\n\n# Examples (Illustrating Tone and Workflow)\n<example>\nuser: 1 + 2\nmodel: 3\n</example>\n\n<example>\nuser: is 13 a prime number?\nmodel: true\n</example>\n\n<example>\nuser: list files here.\nmodel: [tool_call: ls for path '/path/to/project']\n</example>\n\n<example>\nuser: start the server implemented in server.js\nmodel: [tool_call: bash for 'node server.js &' because it must run in the background]\n</example>\n\n<example>\nuser: Refactor the auth logic in src/auth.py to use the requests library instead of urllib.\nmodel: Okay, I can refactor 'src/auth.py'.\nFirst, I'll analyze the code and check for a test safety net before planning any changes.\n[tool_call: glob for path 'tests/test_auth.py']\n[tool_call: read for absolute_path '/path/to/tests/test_auth.py']\n(After analysis)\nGreat, 'tests/test_auth.py' exists and covers the core authentication logic. With this safety net in place, I can safely plan the refactoring.\nI'll also confirm 'requests' is a dependency.\n[tool_call: read for absolute_path '/path/to/requirements.txt']\n(After analysis)\nLooks good, 'requests' is available.\n\nHere's the plan:\n1.  Replace the 'urllib' calls with 'requests'.\n2.  Add proper 'try...except' error handling for the new network calls.\n3.  Remove the old 'urllib' import.\n4.  Run the project's linter and tests to verify the changes.\n\nShould I proceed?\nuser: Yes\nmodel:\n[tool_call: write or edit to apply the refactoring to 'src/auth.py']\nRefactoring complete. Running verification...\n[tool_call: bash for 'ruff check src/auth.py && pytest']\n(After verification passes)\nAll checks passed. This is a stable checkpoint.\n\n<example>\nuser: Delete the temp directory.\nmodel: I can run \\`rm -rf /path/to/project/temp\\`. This will permanently delete the directory and all its contents.\n</example>\n\n<example>\nuser: Write tests for someFile.ts\nmodel:\nOkay, I can write those tests. First, I'll read \\`someFile.ts\\` to understand its functionality.\n[tool_call: read for absolute_path '/path/to/someFile.ts' or use glob to find \\`someFile.ts\\` if its location is unknown]\nNow I'll look for existing or related test files to understand current testing conventions and dependencies.\n[tool_call: glob for paths ['**/*.test.ts', 'src/**/*.spec.ts'] assuming someFile.ts is in the src directory]\n(After reviewing existing tests and the file content)\n[tool_call: write to create /path/to/someFile.test.ts with the test code]\nI've written the tests. Now I'll run the project's test command to verify them.\n[tool_call: bash for 'npm run test']\n</example>\n\n<example>\nuser: How do I update the user's profile information in this system?\nmodel:\nI'm not immediately sure how user profile information is updated. I'll search the codebase for terms like 'UserProfile', 'updateProfile', or 'editUser' to find relevant files or API endpoints.\n[tool_call: grep for pattern 'UserProfile|updateProfile|editUser']\n(After reviewing search results, assuming a relevant file like '/path/to/UserProfileService.java' was found)\nOkay, \\`/path/to/UserProfileService.java\\` seems like the most relevant file. I'll read its content to understand how updates are handled.\n[tool_call: read for absolute_path '/path/to/UserProfileService.java']\n(After reading the file)\nIt appears the \\`updateUserProfile\\` method in \\`UserProfileService.java\\` is responsible for this. It expects a user ID and a \\`UserProfileDTO\\` object...\n</example>\n\n<example>\nuser: Where are all the 'app.config' files in this project? I need to check their settings.\nmodel:\n[tool_call: glob for pattern '**/app.config']\n(Assuming GlobTool returns a list of paths like ['/path/to/moduleA/app.config', '/path/to/moduleB/app.config'])\nI found the following 'app.config' files:\n- /path/to/moduleA/app.config\n- /path/to/moduleB/app.config\nTo help you check their settings, I can read their contents. Which one would you like to start with, or should I read all of them?\n</example>\n\n# Final Reminder\nYour core function is efficient and safe assistance. Balance extreme conciseness with the crucial need for clarity, especially regarding safety and potential system modifications. Always prioritize user control and project conventions. Never make assumptions about the contents of files; instead use 'read' to ensure you aren't making broad assumptions. Finally, you are an agent - please keep going until the user's query is completely resolved.\n\nYou are powered by the model named gemini-2.5-flash. The exact model ID is gemini-proxy/gemini-2.5-flash\nHere is some useful information about the environment you are running in:\n<env>\n  Working directory: C:\\Users\\Tanushree\\aiproxy\n  Workspace root folder: C:\\Users\\Tanushree\\aiproxy\n  Is directory a git repo: yes\n  Platform: win32\n  Today's date: Wed Jun 24 2026\n</env>\nSkills provide specialized instructions and workflows for specific tasks.\nUse the skill tool to load a skill when a task matches its description.\n<available_skills>\n  <skill>\n    <name>customize-opencode</name>\n    <description>Use ONLY when the user is editing or creating opencode's own configuration: opencode.json, opencode.jsonc, files under .opencode/, or files under ~/.config/opencode/. Also use when creating or fixing opencode agents, subagents, skills, plugins, MCP servers, or permission rules. Do not use for the user's own application code, or for any project that is not configuring opencode itself.</description>\n    <location>file:///C:/Users/Tanushree/aiproxy/%3Cbuilt-in%3E</location>\n  </skill>\n</available_skills>"
+          },
+          {
+            "role": "user",
+            "content": "Build a REST API for an e-commerce website using fastapi. DO NOT write any code yet. Just plan."
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "bash",
+              "description": "Executes a given Windows PowerShell (5.1) command with optional timeout, ensuring proper handling and security measures.\n\nBe aware: OS: win32, Shell: powershell\n\nAll commands run in the current working directory by default. Use the `workdir` parameter if you need to run a command in a different directory. AVOID changing directories inside the command - use `workdir` instead.\n\nUse `C:\\Users\\TANUSH~1\\AppData\\Local\\Temp\\opencode` for temporary work outside the workspace. This directory has already been created, already exists, and is pre-approved for external directory access.\n\nIMPORTANT: This tool is for terminal operations like git, npm, docker, etc. DO NOT use it for file operations (reading, writing, editing, searching, finding files) - use the specialized tools for this instead.\n\n# Windows PowerShell (5.1) shell notes\n- Use `cmd1; if ($?) { cmd2 }` to chain dependent commands.\n- Use double quotes for interpolated strings (`\"Hello $name\"`), single quotes for verbatim strings.\n- Prefer full cmdlet names like `Get-ChildItem`, `Set-Content`, `Remove-Item`, and `New-Item` over aliases.\n- Use `$(...)` for subexpressions. Use `@(...)` for array expressions.\n- To call a native executable whose path contains spaces, use the call operator: `& \"path/to/exe\" args`.\n- Escape special characters with the PowerShell backtick character.\n\nBefore executing the command, please follow these steps:\n\n1. Directory Verification:\n   - If the command will create new directories or files, first use `Test-Path -LiteralPath <parent>` to verify the parent directory exists and is the correct location\n   - For example, before creating `foo\\bar`, first use `Test-Path -LiteralPath \"foo\"` to check that `foo` exists and is the intended parent directory\n\n2. Command Execution:\n   - Always quote file paths that contain spaces with double quotes (e.g., Remove-Item -LiteralPath \"path with spaces\\file.txt\")\n   - Examples of proper quoting:\n     - New-Item -ItemType Directory -Path \"My Documents\" (correct)\n     - New-Item -ItemType Directory -Path My Documents (incorrect - path is split)\n     - & \"path with spaces\\script.ps1\" (correct)\n     - path with spaces\\script.ps1 (incorrect - path is split and not invoked)\n   - After ensuring proper quoting, execute the command.\n   - Capture the output of the command.\n\nUsage notes:\n  - The command argument is required.\n  - You can specify an optional timeout in milliseconds. If not specified, commands will time out after 120000ms.\n  - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.\n  - If the output exceeds 2000 lines or 51200 bytes, it will be truncated and the full output will be written to a file. You can use Read with offset/limit to read specific sections or Grep to search the full content. Do NOT use `Select-Object -First`, `Select-Object -Last`, or other truncation commands to limit output; the full output will already be captured to a file for more precise searching.\n\n  - Avoid using Shell with PowerShell file/content cmdlets unless explicitly instructed or when these cmdlets are truly necessary for the task. Instead, always prefer using the dedicated tools for these commands:\n    - File search: Use Glob (NOT Get-ChildItem)\n    - Content search: Use Grep (NOT Select-String)\n    - Read files: Use Read (NOT Get-Content)\n    - Edit files: Use Edit (NOT Set-Content)\n    - Write files: Use Write (NOT Set-Content/Out-File or here-strings)\n    - Communication: Output text directly (NOT Write-Output/Write-Host)\n  - When issuing multiple commands:\n    - If the commands are independent and can run in parallel, make multiple bash tool calls in a single message. For example, if you need to run \"git status\" and \"git diff\", send a single message with two bash tool calls in parallel.\n    - If the commands depend on each other and must run sequentially, avoid '&&' in this shell because Windows PowerShell (5.1) does not support it. Use PowerShell conditionals such as `cmd1; if ($?) { cmd2 }` when later commands must depend on earlier success.\n    - Use `;` only when you need to run commands sequentially but don't care if earlier commands fail\n    - DO NOT use newlines to separate commands (newlines are ok in quoted strings)\n  - AVOID changing directories inside the command. Use the `workdir` parameter to change directories instead.\n    <good-example>\n    Use workdir=\"project\\subdir\" with command: pytest tests\n    </good-example>\n    <bad-example>\n    Set-Location -LiteralPath \"project\\subdir\"; if ($?) { pytest tests }\n    </bad-example>\n\n# Git and GitHub\n- Only commit, amend, push, or create PRs when explicitly requested.\n- Before committing, inspect `git status`, `git diff`, and `git log --oneline -10`; stage only intended files and never commit secrets.\n- Write a concise commit message that matches the repo style.\n- Do not update git config, skip hooks, use interactive `-i`, force-push, or create empty commits unless explicitly requested.\n- If a commit fails or hooks reject it, fix the issue and create a new commit; do not amend the failed commit.\n- Before creating a PR, inspect status, diff, remote tracking, recent commits, and the diff from the base branch.\n- Review all commits included in the PR, not just the latest commit.\n- Use `gh` for GitHub tasks, including PRs, issues, checks, and releases; return the PR URL when done.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "command": {
+                    "type": "string",
+                    "description": "The command to execute"
+                  },
+                  "timeout": {
+                    "minimum": -9007199254740991,
+                    "exclusiveMinimum": 0,
+                    "type": "integer",
+                    "maximum": 9007199254740991,
+                    "description": "Optional timeout in milliseconds"
+                  },
+                  "workdir": {
+                    "type": "string",
+                    "description": "The working directory to run the command in. Defaults to the current directory. Use this instead of 'cd' commands."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Clear, concise description of what this command does in 5-10 words. Examples:\nInput: Get-ChildItem -LiteralPath \".\"\nOutput: Lists current directory\n\nInput: git status\nOutput: Shows working tree status\n\nInput: npm install\nOutput: Installs package dependencies\n\nInput: New-Item -ItemType Directory -Path \"tmp\"\nOutput: Creates directory tmp"
+                  }
+                },
+                "required": [
+                  "command",
+                  "description"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "edit",
+              "description": "Performs exact string replacements in files. \n\nUsage:\n- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file. \n- When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: line number + colon + space (e.g., `1: `). Everything after that space is the actual file content to match. Never include any part of the line number prefix in the oldString or newString.\n- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.\n- Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.\n- The edit will FAIL if `oldString` is not found in the file with an error \"oldString not found in content\".\n- The edit will FAIL if `oldString` is found multiple times in the file with an error \"Found multiple matches for oldString. Provide more surrounding lines in oldString to identify the correct match.\" Either provide a larger string with more surrounding context to make it unique or use `replaceAll` to change every instance of `oldString`. \n- Use `replaceAll` for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "filePath": {
+                    "type": "string",
+                    "description": "The absolute path to the file to modify"
+                  },
+                  "oldString": {
+                    "type": "string",
+                    "description": "The text to replace"
+                  },
+                  "newString": {
+                    "type": "string",
+                    "description": "The text to replace it with (must be different from oldString)"
+                  },
+                  "replaceAll": {
+                    "type": "boolean",
+                    "description": "Replace all occurrences of oldString (default false)"
+                  }
+                },
+                "required": [
+                  "filePath",
+                  "oldString",
+                  "newString"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "glob",
+              "description": "- Fast file pattern matching tool that works with any codebase size\n- Supports glob patterns like \"**/*.js\" or \"src/**/*.ts\"\n- Returns matching file paths\n- Use this tool when you need to find files by name patterns\n- When you are doing an open-ended search that may require multiple rounds of globbing and grepping, use the Task tool instead\n- You have the capability to call multiple tools in a single response. It is always better to speculatively perform multiple searches as a batch that are potentially useful.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "pattern": {
+                    "type": "string",
+                    "description": "The glob pattern to match files against"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "The directory to search in. If not specified, the current working directory will be used. IMPORTANT: Omit this field to use the default directory. DO NOT enter \"undefined\" or \"null\" - simply omit it for the default behavior. Must be a valid directory path if provided."
+                  }
+                },
+                "required": [
+                  "pattern"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "grep",
+              "description": "- Fast content search tool that works with any codebase size\n- Searches file contents using regular expressions\n- Supports full regex syntax (eg. \"log.*Error\", \"function\\s+\\w+\", etc.)\n- Filter files by pattern with the include parameter (eg. \"*.js\", \"*.{ts,tsx}\")\n- Returns file paths and line numbers with matching lines\n- Use this tool when you need to find files containing specific patterns\n- If you need to identify/count the number of matches within files, use the Bash tool with `rg` (ripgrep) directly. Do NOT use `grep`.\n- When you are doing an open-ended search that may require multiple rounds of globbing and grepping, use the Task tool instead\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "pattern": {
+                    "type": "string",
+                    "description": "The regex pattern to search for in file contents"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "The directory to search in. Defaults to the current working directory."
+                  },
+                  "include": {
+                    "type": "string",
+                    "description": "File pattern to include in the search (e.g. \"*.js\", \"*.{ts,tsx}\")"
+                  }
+                },
+                "required": [
+                  "pattern"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "question",
+              "description": "Use this tool when you need to ask the user questions during execution. This allows you to:\n1. Gather user preferences or requirements\n2. Clarify ambiguous instructions\n3. Get decisions on implementation choices as you work\n4. Offer choices to the user about what direction to take.\n\nUsage notes:\n- When `custom` is enabled (default), a \"Type your own answer\" option is added automatically; don't include \"Other\" or catch-all options\n- Answers are returned as arrays of labels; set `multiple: true` to allow selecting more than one\n- If you recommend a specific option, make that the first option in the list and add \"(Recommended)\" at the end of the label\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "questions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "question": {
+                          "type": "string",
+                          "description": "Complete question"
+                        },
+                        "header": {
+                          "type": "string",
+                          "description": "Very short label (max 30 chars)"
+                        },
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": {
+                                "type": "string",
+                                "description": "Display text (1-5 words, concise)"
+                              },
+                              "description": {
+                                "type": "string",
+                                "description": "Explanation of choice"
+                              }
+                            },
+                            "required": [
+                              "label",
+                              "description"
+                            ]
+                          },
+                          "description": "Available choices"
+                        },
+                        "multiple": {
+                          "type": "boolean",
+                          "description": "Allow selecting multiple choices"
+                        }
+                      },
+                      "required": [
+                        "question",
+                        "header",
+                        "options"
+                      ]
+                    },
+                    "description": "Questions to ask"
+                  }
+                },
+                "required": [
+                  "questions"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "read",
+              "description": "Read a file or directory from the local filesystem. If the path does not exist, an error is returned.\n\nUsage:\n- The filePath parameter should be an absolute path.\n- By default, this tool returns up to 2000 lines from the start of the file.\n- The offset parameter is the line number to start from (1-indexed).\n- To read later sections, call this tool again with a larger offset.\n- Use the grep tool to find specific content in large files or files with long lines.\n- If you are unsure of the correct file path, use the glob tool to look up filenames by glob pattern.\n- Contents are returned with each line prefixed by its line number as `<line>: <content>`. For example, if a file has contents \"foo\\n\", you will receive \"1: foo\\n\". For directories, entries are returned one per line (without line numbers) with a trailing `/` for subdirectories.\n- Any line longer than 2000 characters is truncated.\n- Call this tool in parallel when you know there are multiple files you want to read.\n- Avoid tiny repeated slices (30 line chunks). If you need more context, read a larger window.\n- This tool can read image files and PDFs and return them as file attachments.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "filePath": {
+                    "type": "string",
+                    "description": "The absolute path to the file or directory to read"
+                  },
+                  "offset": {
+                    "minimum": 0,
+                    "type": "integer",
+                    "maximum": 9007199254740991,
+                    "description": "The line number to start reading from (1-indexed)"
+                  },
+                  "limit": {
+                    "minimum": 0,
+                    "type": "integer",
+                    "maximum": 9007199254740991,
+                    "description": "The maximum number of lines to read (defaults to 2000)"
+                  }
+                },
+                "required": [
+                  "filePath"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "skill",
+              "description": "Load a specialized skill when the task at hand matches one of the skills listed in the system prompt.\n\nUse this tool to inject the skill's instructions and resources into current conversation. The output may contain detailed workflow guidance as well as references to scripts, files, etc in the same directory as the skill.\n\nThe skill name must match one of the skills listed in your system prompt.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The name of the skill from available_skills"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "task",
+              "description": "Launch a new agent to handle complex, multistep tasks autonomously.\n\nWhen using the Task tool, you must specify a subagent_type parameter to select which agent type to use.\n\nWhen NOT to use the Task tool:\n- If you want to read a specific file path, use the Read or Glob tool instead of the Task tool, to find the match more quickly\n- If you are searching for a specific class definition like \"class Foo\", use the Grep tool instead, to find the match more quickly\n- If you are searching for code within a specific file or set of 2-3 files, use the Read tool instead of the Task tool, to find the match more quickly\n- If no available agent is a good fit for the task, use other tools directly\n\n\nUsage notes:\n1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses\n2. Once you have delegated work to an agent, do not duplicate that work yourself. Continue with non-overlapping tasks, or wait for the result. For background tasks, you will be notified automatically when the result is ready.\n3. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result. The output includes a task_id you can reuse later to continue the same subagent session.\n4. Each agent invocation starts with a fresh context unless you provide task_id to resume the same subagent session (which continues with its previous messages and tool outputs). When starting fresh, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.\n5. The agent's outputs should generally be trusted\n6. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent. Tell it how to verify its work if possible (e.g., relevant test commands).\n7. If the agent description mentions that it should be used proactively, then you should try your best to use it without the user having to ask for it first. Use your judgement.\n\nAvailable agent types and the tools they have access to:\n- explore: Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. \"src/components/**/*.tsx\"), search code for keywords (eg. \"API endpoints\"), or answer questions about the codebase (eg. \"how do API endpoints work?\"). When calling this agent, specify the desired thoroughness level: \"quick\" for basic searches, \"medium\" for moderate exploration, or \"very thorough\" for comprehensive analysis across multiple locations and naming conventions.\n- general: General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "A short (3-5 words) description of the task"
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "The task for the agent to perform"
+                  },
+                  "subagent_type": {
+                    "type": "string",
+                    "description": "The type of specialized agent to use for this task"
+                  },
+                  "task_id": {
+                    "type": "string",
+                    "description": "This should only be set if you mean to resume a previous task (you can pass a prior task_id and the task will continue the same subagent session as before instead of creating a fresh one)"
+                  },
+                  "command": {
+                    "type": "string",
+                    "description": "The command that triggered this task"
+                  }
+                },
+                "required": [
+                  "description",
+                  "prompt",
+                  "subagent_type"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "todowrite",
+              "description": "Create and maintain a structured task list for the current coding session. Tracks progress, organizes multi-step work, and surfaces status to the user.\n\n## When to use\nUse proactively when:\n- The task requires 3+ distinct steps or actions (not just 3 tool calls for a single conceptual step)\n- The work is non-trivial and benefits from planning\n- The user provides multiple tasks (numbered or comma-separated) or explicitly asks for a todo list\n- New instructions arrive - capture them as todos\n- You start a task - mark it `in_progress` (only one at a time) before working\n- You finish a task - mark it `completed` and add any follow-ups discovered during the work\n\n## When NOT to use\nSkip when:\n- The work is a single, straightforward task (or <3 trivial steps)\n- The request is purely informational or conversational\n- Tracking adds no organizational value\n\n## States\n- `pending` - not started\n- `in_progress` - actively working (exactly ONE at a time)\n- `completed` - finished successfully\n- `cancelled` - no longer needed\n\n## Rules\n- Update status in real time; don't batch completions\n- Mark `completed` only after the required work is actually done, including any required verification. Never based on intent.\n- Keep exactly one `in_progress` while work remains\n- If blocked or partial, keep it `in_progress` and add a follow-up todo describing the blocker\n- Preserve user-provided commands verbatim (flags, args, order)\n- Items should be specific and actionable; break large work into smaller steps\n\n## Examples\n\nUse it:\n- \"Add a dark mode toggle and run the tests\" -> multi-step feature + explicit verification\n- \"Rename getCwd -> getCurrentWorkingDirectory across the repo\" -> grep reveals 15 occurrences in 8 files\n- \"Implement registration, catalog, cart, checkout\" -> multiple complex features\n\nSkip it:\n- \"How do I print Hello World in Python?\" -> informational\n- \"Add a comment to calculateTotal\" -> single edit\n- \"Run npm install and tell me what happened\" -> one command\n\nWhen in doubt, use it.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "todos": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "content": {
+                          "type": "string",
+                          "description": "Brief description of the task"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Current status of the task: pending, in_progress, completed, cancelled"
+                        },
+                        "priority": {
+                          "type": "string",
+                          "description": "Priority level of the task: high, medium, low"
+                        }
+                      },
+                      "required": [
+                        "content",
+                        "status",
+                        "priority"
+                      ]
+                    },
+                    "description": "The updated todo list"
+                  }
+                },
+                "required": [
+                  "todos"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "webfetch",
+              "description": "- Fetches content from a specified URL\n- Takes a URL and optional format as input\n- Fetches the URL content, converts to requested format (markdown by default)\n- Returns the content in the specified format\n- Use this tool when you need to retrieve and analyze web content\n\nUsage notes:\n  - IMPORTANT: if another tool is present that offers better web fetching capabilities, is more targeted to the task, or has fewer restrictions, prefer using that tool instead of this one.\n  - The URL must be a fully-formed valid URL\n  - HTTP URLs will be automatically upgraded to HTTPS\n  - Format options: \"markdown\" (default), \"text\", or \"html\"\n  - This tool is read-only and does not modify any files\n  - Results may be summarized if the content is very large\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "The URL to fetch content from"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "markdown",
+                      "html"
+                    ],
+                    "description": "The format to return the content in (text, markdown, or html). Defaults to markdown.",
+                    "default": "markdown"
+                  },
+                  "timeout": {
+                    "type": "number",
+                    "description": "Optional timeout in seconds (max 120)"
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "write",
+              "description": "Writes a file to the local filesystem.\n\nUsage:\n- This tool will overwrite the existing file if there is one at the provided path.\n- If this is an existing file, you MUST use the Read tool first to read the file's contents. This tool will fail if you did not read the file first.\n- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.\n- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.\n- Only use emojis if the user explicitly requests it. Avoid writing emojis to files unless asked.\n",
+              "parameters": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "The content to write to the file"
+                  },
+                  "filePath": {
+                    "type": "string",
+                    "description": "The absolute path to the file to write (must be absolute, not relative)"
+                  }
+                },
+                "required": [
+                  "content",
+                  "filePath"
+                ]
+              }
+            }
+          }
+        ],
+        "tool_choice": "auto",
+        "stream": true,
+        "stream_options": {
+          "include_usage": true
+        }
+      },
+      "bytes": 40510
+    },
+    "response": {
+      "status": 200,
+      "body": "data: {\"choices\":[{\"delta\":{\"content\":\"Here's the plan for building a FastAPI e-commerce REST API:\\n\\n1.  **Project Setup**:\\n    *   Create \",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308158,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":28,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":8802},\"total_tokens\":9782}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"`ecommerce-api` project directory.\\n    *   Set up a Python virtual environment.\\n    *   Install `fastapi`, `uvicorn`, `sqlalchemy`, and `pydantic`.\\n\\n2.  **API Structure**:\\n\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308158,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":77,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":8802},\"total_tokens\":9831}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"    *   `main.py`: Main FastAPI application instance.\\n    *   `app/`:\\n        *   `__init__.py`\\n        *   `api/`: API routers (e.g., `auth.\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308158,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":125,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":8802},\"total_tokens\":9879}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"py`, `products.py`, `cart.py`, `orders.py`).\\n        *   `models/`: SQLAlchemy models for database entities.\\n        *   `schemas/`: Pydantic models for request/response validation\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308158,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":173,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":8802},\"total_tokens\":9927}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\".\\n        *   `crud/`: Database interaction logic.\\n        *   `dependencies/`: Dependency injection for authentication, database sessions, etc.\\n        *   `core/`: Configuration (settings, database connection).\\n\\n3.  **\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308159,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":224,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":8802},\"total_tokens\":9978}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"Database**:\\n\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308159,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":226,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":9980}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"    *   Use SQLite for initial development, with SQLAlchemy as the ORM.\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308159,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":241,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":9995}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"\\n    *   Define database models for `User`, `Product`, `CartItem`, `Order`, `OrderItem`.\\n\\n4.  **Key Modules & Endpoints**:\\n    *   **Authentication (`/auth`)**:\\n        \",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308160,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":285,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10039}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"*   `POST /auth/register`: User registration.\\n        *   `POST /auth/login`: User login, returns JWT token.\\n    *   **Users (`/users`)**:\\n        *   `GET /\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308160,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":333,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10087}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"users/me`: Get current user profile (protected).\\n        *   `PUT /users/me`: Update current user profile (protected).\\n    *   **Products (`/products`)**:\\n        *   `GET /products\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308160,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":381,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10135}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"`: List all products (pagination, filtering).\\n        *   `GET /products/{product_id}`: Retrieve product by ID.\\n        *   `POST /products`: Create new product (admin protected).\\n        *   `PUT /\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308160,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":432,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10186}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"products/{product_id}`: Update product (admin protected).\\n        *   `DELETE /products/{product_id}`: Delete product (admin protected).\\n    *   **Cart (`/cart`)**:\\n        *   \",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308161,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":479,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10233}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"`GET /cart`: Get user's cart content (protected).\\n        *   `POST /cart/add`: Add item to cart (protected).\\n        *   `PUT /cart/update/{product_id}`: Update item quantity\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308161,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":530,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10284}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\" in cart (protected).\\n        *   `DELETE /cart/remove/{product_id}`: Remove item from cart (protected).\\n    *   **Orders (`/orders`)**:\\n        *   `POST /orders`:\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308161,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":578,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10332}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\" Create an order from the cart (protected).\\n        *   `GET /orders`: List user's orders (protected).\\n        *   `GET /orders/{order_id}`: Get specific order details (protected).\\n\\n\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308161,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":625,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10379}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"5.  **Security**:\\n    *   **Authentication**: JWT-based token authentication using `python-jose` and FastAPI's `Security` dependency.\\n    *   **Authorization**: Role-based access control (e.g\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308161,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":674,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10428}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"., `user`, `admin`) using dependencies.\\n    *   Password hashing with `passlib`.\\n\\n6.  **Error Handling**:\\n    *   Custom exception handlers for HTTP exceptions (e.g., 404, 4\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308162,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":725,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10479}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"01, 403, 422).\\n\\n7.  **Testing**:\\n    *   Use `pytest` and `httpx` for unit and integration tests.\\n\\n8.  **Development Workflow**:\\n    *\",\"role\":\"assistant\"},\"index\":0}],\"created\":1782308162,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":775,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10529}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"   Run with `uvicorn main:app --reload`.\",\"role\":\"assistant\"},\"finish_reason\":\"stop\",\"index\":0}],\"created\":1782308162,\"id\":\"Od07arDLH_qUjuMPh8mn6QE\",\"model\":\"gemini-2.5-flash\",\"object\":\"chat.completion.chunk\",\"usage\":{\"completion_tokens\":786,\"prompt_tokens\":9034,\"prompt_tokens_details\":{\"cached_tokens\":7999},\"total_tokens\":10540}}\n\ndata: [DONE]\n\n",
+      "bytes": 8811,
+      "rate_limit": null
+    },
+    "metrics": {
+      "tokens": {
+        "prompt_tokens": 9034,
+        "completion_tokens": 786,
+        "total_tokens": 10540
+      },
+      "error": {
+        "error_type": "success",
+        "error_category": null,
+        "is_client_error": false,
+        "is_server_error": false,
+        "is_rate_limit": false
+      },
+      "cost": {
+        "prompt_cost": 0.000678,
+        "completion_cost": 0.000236,
+        "total_cost": 0.000913
+      }
+    }
+  }
+]
